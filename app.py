@@ -1,33 +1,35 @@
 import streamlit as st
 import google.generativeai as genai
 
-# إعدادات الصفحة
-st.set_page_config(page_title="محسن الأوامر الذكي", page_icon="🤖")
+st.set_page_config(page_title="محسن الأوامر Pro", page_icon="🤖")
 
+# واجهة فخمة
 st.title("🤖 محسن الأوامر الذكي")
-st.markdown("### حوّل أفكارك البسيطة إلى أوامر احترافية")
+st.info("نعمل الآن بنظام Gemini 1.5 Flash الأسرع")
 
-# المفتاح الخاص بك
+# المفتاح
 API_KEY = "AIzaSyAs9liEdvSQWU3M-8B8Zep6nTZSPbi2TCI"
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-pro')
 
-# واجهة المستخدم
-user_input = st.text_area("📝 اكتب فكرتك البسيطة هنا:", placeholder="مثال: فكرة تطبيق، نصيحة طبية، قصة...")
+# استخدام الموديل الأحدث
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-if st.button("✨ ابدأ التحسين الآن"):
+user_input = st.text_area("📝 اكتب فكرتك هنا:", height=150)
+
+if st.button("✨ تحسين الأمر الآن"):
     if user_input:
-        with st.spinner("⏳ جاري هندسة الأمر بصورة احترافية..."):
+        with st.spinner("⏳ جاري الذكاء..."):
             try:
-                prompt = f"أنت خبير محترف في هندسة الأوامر. أعد صياغة النص التالي ليكون أمراً (Prompt) مفصلاً، واضحاً، وموجهاً للحصول على أفضل نتيجة من الذكاء الاصطناعي. اجعل النتيجة باللغة العربية: \n\n{user_input}"
+                prompt = f"أنت خبير في هندسة الأوامر، حسن هذا النص ليكون أمراً احترافياً بالعربية: {user_input}"
                 response = model.generate_content(prompt)
-                
-                st.success("✅ إليك الأمر المحسن:")
-                st.code(response.text, language='markdown')
+                st.success("✅ النتيجة:")
+                st.code(response.text)
                 st.balloons()
             except Exception as e:
-                st.error("❌ عذراً، حدث خطأ في الاتصال.")
+                # هنا سيخبرنا الموقع بالخطأ الحقيقي بدلاً من رسالة عامة
+                st.error(f"❌ حدث خطأ تقني: {e}")
     else:
-        st.warning("⚠️ يرجى كتابة نص أولاً.")
+        st.warning("يرجى إدخال نص.")
 
-st.sidebar.info("هذا الموقع يعمل بذكاء Gemini ومبرمج عبر Xiaomi 15 Ultra")
+st.markdown("---")
+st.caption("تطوير وحش الشاومي 15 ألترا 🚀")
