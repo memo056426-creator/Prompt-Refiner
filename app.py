@@ -1,44 +1,42 @@
 import streamlit as st
 import requests
 
-st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🤖")
-st.title("🤖 محسن الأوامر الذكي")
+st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🚀")
+st.title("🚀 محسن الأوامر الذكي")
 
-# جلب المفتاح
-API_KEY = st.secrets.get("GEMINI_API_KEY", "").strip()
+# كود تشخيصي: لنعرف ماذا يرى السيرفر في الخزنة
+all_secrets = list(st.secrets.keys())
+
+# محاولة جلب المفتاح بأكثر من اسم (للاحتياط)
+API_KEY = st.secrets.get("GROQ_API_KEY") or st.secrets.get("groq_api_key")
 
 user_input = st.text_area("📝 اكتب فكرتك هنا:")
 
 if st.button("✨ ابدأ التحسين الآن"):
     if not API_KEY:
-        st.error("🚨 المفتاح مفقود!")
+        st.error(f"🚨 لم أجد المفتاح! الأسماء الموجودة في خزنتك هي: {all_secrets}")
+        st.info("تأكد أنك كتبت الاسم في Secrets هكذا: GROQ_API_KEY")
     elif user_input:
-        with st.spinner("⏳ جاري كسر القيود الجغرافية وتحسين طلبك..."):
+        with st.spinner("⚡ جاري التحسين..."):
             try:
-                # سنستخدم رابط بروكسي وسيط موثوق لتجاوز الحظر
-                # ملاحظة: هذا الرابط يقوم فقط بتمرير الطلب لجوجل من IP مختلف
-                proxy_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
-                
-                payload = {
-                    "contents": [{"parts": [{"text": f"أنت خبير في هندسة الأوامر. حسن هذا النص ليكون أمراً احترافياً ومفصلاً بالعربية: {user_input}"}]}]
+                url = "https://api.groq.com/openai/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"}
+                data = {
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": "أنت خبير محترف في هندسة الأوامر. حسن النصوص العربية لتكون أوامر احترافية ومفصلة."},
+                        {"role": "user", "content": f"حسن هذا النص ليكون أمراً احترافياً: {user_input}"}
+                    ]
                 }
-                
-                # سنحاول الاتصال المباشر أولاً، وإذا فشل سنخبرك بالحل البديل
-                response = requests.post(proxy_url, json=payload, timeout=30)
-                result = response.json()
-
+                response = requests.post(url, headers=headers, json=data, timeout=20)
                 if response.status_code == 200:
-                    refined_text = result['candidates'][0]['content']['parts'][0]['text']
-                    st.success("✅ تم بنجاح! كسرنا الحجز الجغرافي.")
-                    st.code(refined_text)
+                    st.success("✅ أخيراً! نجحنا!")
+                    st.code(response.json()['choices'][0]['message']['content'])
                     st.balloons()
-                elif "location" in str(result).lower():
-                    st.error("🌍 جوجل لا تزال تكتشف موقع السيرفر.")
-                    st.info("💡 الحل النهائي: سأعطيك كود لموقع (Groq) بدلاً من Gemini، فهو أسرع 10 مرات ولا يوجد فيه أي حظر جغرافي.")
                 else:
-                    st.error(f"❌ خطأ: {result.get('error', {}).get('message', 'غير معروف')}")
+                    st.error(f"❌ خطأ من Groq: {response.text}")
             except Exception as e:
-                st.error(f"❌ فشل الاتصال: {e}")
+                st.error(f"❌ حدث خطأ: {e}")
     else:
         st.warning("⚠️ اكتب نصاً أولاً.")
 
