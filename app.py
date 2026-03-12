@@ -1,44 +1,48 @@
 import streamlit as st
 import google.generativeai as genai
 
+# إعدادات الصفحة
 st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🤖")
 
 st.title("🤖 محسن الأوامر الذكي")
 
-# التأكد من المفتاح
-if "GEMINI_API_KEY" not in st.secrets:
+# 1. جلب وتنظيف المفتاح
+if "GEMINI_API_KEY" in st.secrets:
+    try:
+        # .strip() هذي تحذف أي مسافات مخفية قد تسبب خطأ latin-1
+        api_key = st.secrets["GEMINI_API_KEY"].strip()
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    except Exception as e:
+        st.error(f"خطأ في إعداد المفتاح: {e}")
+else:
     st.error("🚨 المفتاح مفقود في Secrets!")
     st.stop()
-
-# إعداد الموديل مع إجبار الاتصال عبر REST
-@st.cache_resource
-def setup_genai():
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"], transport='rest') # أضفنا transport='rest' هنا
-    return genai.GenerativeModel('gemini-1.5-flash')
-
-model = setup_genai()
 
 user_input = st.text_area("📝 اكتب فكرتك هنا:")
 
 if st.button("✨ ابدأ التحسين الآن"):
     if user_input:
-        with st.spinner("⏳ جاري تحسين الأمر..."):
+        with st.spinner("⏳ جاري التحسين..."):
             try:
-                # محاولة توليد المحتوى
+                # إرسال النص العربي مباشرة
                 response = model.generate_content(
-                    f"أنت خبير في هندسة الأوامر. حسن هذا النص ليكون أمراً احترافياً بالعربية: {user_input}"
+                    f"أنت خبير في هندسة الأوامر. أعد صياغة النص التالي ليكون أمراً (Prompt) احترافياً ومفصلاً باللغة العربية: {user_input}"
                 )
-                st.success("✅ تم بنجاح!")
-                st.code(response.text)
-                st.balloons()
+                
+                if response.text:
+                    st.success("✅ تم التحسين بنجاح!")
+                    st.code(response.text)
+                    st.balloons()
             except Exception as e:
-                # إذا ظهر خطأ Location، سنعرف فوراً
-                error_msg = str(e)
-                if "location" in error_msg.lower():
-                    st.error("🌍 عذراً، الخدمة غير متوفرة في موقع السيرفر الحالي. سنحاول حلاً بديلاً قريباً.")
+                # لإظهار الخطأ بوضوح إذا كان بسبب الموقع الجغرافي
+                error_str = str(e)
+                if "location" in error_str.lower():
+                    st.error("🌍 السيرفر في منطقة غير مدعومة حالياً. جرب إعادة تشغيل التطبيق (Reboot).")
                 else:
-                    st.error(f"❌ حدث خطأ: {error_msg}")
+                    st.error(f"❌ حدث خطأ: {error_str}")
     else:
-        st.warning("⚠️ اكتب نصاً أولاً.")
+        st.warning("⚠️ يرجى كتابة نص أولاً.")
 
 st.caption("برمجت بواسطة Xiaomi 15 Ultra 🚀")
+ 
