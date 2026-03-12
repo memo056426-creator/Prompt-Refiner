@@ -1,48 +1,38 @@
 import streamlit as st
-import google.generativeai as genai
+import requests
 
-# إعدادات الصفحة
 st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🤖")
-
 st.title("🤖 محسن الأوامر الذكي")
 
-# 1. جلب وتنظيف المفتاح
-if "GEMINI_API_KEY" in st.secrets:
-    try:
-        # .strip() هذي تحذف أي مسافات مخفية قد تسبب خطأ latin-1
-        api_key = st.secrets["GEMINI_API_KEY"].strip()
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-    except Exception as e:
-        st.error(f"خطأ في إعداد المفتاح: {e}")
-else:
-    st.error("🚨 المفتاح مفقود في Secrets!")
-    st.stop()
+# جلب المفتاح من الخزنة
+API_KEY = st.secrets.get("GEMINI_API_KEY", "").strip()
 
 user_input = st.text_area("📝 اكتب فكرتك هنا:")
 
 if st.button("✨ ابدأ التحسين الآن"):
-    if user_input:
-        with st.spinner("⏳ جاري التحسين..."):
+    if not API_KEY:
+        st.error("🚨 المفتاح غير موجود في Secrets!")
+    elif user_input:
+        with st.spinner("⏳ جاري التواصل المباشر مع الذكاء الاصطناعي..."):
             try:
-                # إرسال النص العربي مباشرة
-                response = model.generate_content(
-                    f"أنت خبير في هندسة الأوامر. أعد صياغة النص التالي ليكون أمراً (Prompt) احترافياً ومفصلاً باللغة العربية: {user_input}"
-                )
+                # اتصال مباشر وسريع يدعم العربية 100%
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={API_KEY}"
+                payload = {"contents": [{"parts": [{"text": f"أنت خبير في هندسة الأوامر. حسن هذا النص ليكون أمراً (Prompt) احترافياً ومفصلاً باللغة العربية: {user_input}"}]}]}
                 
-                if response.text:
+                response = requests.post(url, json=payload, timeout=30)
+                result = response.json()
+
+                if response.status_code == 200:
+                    refined_text = result['candidates'][0]['content']['parts'][0]['text']
                     st.success("✅ تم التحسين بنجاح!")
-                    st.code(response.text)
+                    st.code(refined_text)
                     st.balloons()
-            except Exception as e:
-                # لإظهار الخطأ بوضوح إذا كان بسبب الموقع الجغرافي
-                error_str = str(e)
-                if "location" in error_str.lower():
-                    st.error("🌍 السيرفر في منطقة غير مدعومة حالياً. جرب إعادة تشغيل التطبيق (Reboot).")
                 else:
-                    st.error(f"❌ حدث خطأ: {error_str}")
+                    error_msg = result.get('error', {}).get('message', 'خطأ غير معروف')
+                    st.error(f"❌ خطأ من جوجل: {error_msg}")
+            except Exception as e:
+                st.error(f"❌ فشل الاتصال: {e}")
     else:
-        st.warning("⚠️ يرجى كتابة نص أولاً.")
+        st.warning("⚠️ اكتب نصاً أولاً.")
 
 st.caption("برمجت بواسطة Xiaomi 15 Ultra 🚀")
- 
