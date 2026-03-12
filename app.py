@@ -6,37 +6,30 @@ st.set_page_config(page_title="محسن الأوامر Pro", page_icon="🤖")
 st.title("🤖 محسن الأوامر الذكي")
 st.markdown("---")
 
-# المفتاح الخاص بك
-API_KEY = "AIzaSyAs9liEdvSQWU3M-8B8Zep6nTZSPbi2TCI"
-genai.configure(api_key=API_KEY)
-
-# دالة ذكية لتجربة الموديلات المتاحة لضمان التشغيل
-def get_response(user_text):
-    models_to_try = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro']
-    
-    for model_name in models_to_try:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(f"أنت خبير في هندسة الأوامر، حسن هذا النص ليكون أمراً احترافياً ومفصلاً باللغة العربية: {user_text}")
-            return response.text, model_name
-        except:
-            continue
-    return None, None
+# جلب المفتاح سراً من إعدادات الموقع
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        API_KEY = st.secrets["GEMINI_API_KEY"]
+        genai.configure(api_key=API_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+    else:
+        st.error("⚠️ خطأ: المفتاح غير موجود في إعدادات Secrets.")
+except Exception as e:
+    st.error(f"❌ حدث خطأ في النظام: {e}")
 
 user_input = st.text_area("📝 اكتب فكرتك البسيطة هنا:", height=150)
 
 if st.button("✨ ابدأ التحسين الآن"):
     if user_input:
-        with st.spinner("⏳ جاري البحث عن أفضل موديل وتحسين الأمر..."):
-            result, used_model = get_response(user_input)
-            
-            if result:
-                st.success(f"✅ تم التحسين بنجاح!")
-                st.markdown(f"**الموديل المستخدم:** `{used_model}`")
-                st.code(result, language='markdown')
+        with st.spinner("⏳ جاري التحسين..."):
+            try:
+                prompt = f"أنت خبير في هندسة الأوامر، حسن هذا النص ليكون أمراً احترافياً ومفصلاً باللغة العربية: {user_input}"
+                response = model.generate_content(prompt)
+                st.success("✅ تم التحسين بنجاح!")
+                st.code(response.text, language='markdown')
                 st.balloons()
-            else:
-                st.error("❌ عذراً، يبدو أن هناك مشكلة في الاتصال بسيرفرات جوجل حالياً. جرب بعد دقيقة.")
+            except Exception as e:
+                st.error(f"❌ حدث خطأ أثناء الاتصال بجوجل: {str(e)}")
     else:
         st.warning("⚠️ يرجى كتابة نص أولاً.")
 
