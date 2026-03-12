@@ -5,35 +5,40 @@ st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🤖")
 
 st.title("🤖 محسن الأوامر الذكي")
 
-# 1. فحص المفتاح
+# التأكد من المفتاح
 if "GEMINI_API_KEY" not in st.secrets:
-    st.error("🚨 المفتاح غير موجود في Secrets!")
+    st.error("🚨 المفتاح مفقود في Secrets!")
     st.stop()
 
-# 2. إعداد الاتصال
-try:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
-except Exception as e:
-    st.error(f"❌ فشل الإعداد: {e}")
-    st.stop()
+# إعداد الموديل مع إجبار الاتصال عبر REST
+@st.cache_resource
+def setup_genai():
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"], transport='rest') # أضفنا transport='rest' هنا
+    return genai.GenerativeModel('gemini-1.5-flash')
+
+model = setup_genai()
 
 user_input = st.text_area("📝 اكتب فكرتك هنا:")
 
 if st.button("✨ ابدأ التحسين الآن"):
     if user_input:
-        with st.spinner("⏳ جاري التواصل مع ذكاء جوجل..."):
+        with st.spinner("⏳ جاري تحسين الأمر..."):
             try:
-                # التعديل هنا: أرسلنا النص مباشرة بدون تعقيدات الإعدادات
+                # محاولة توليد المحتوى
                 response = model.generate_content(
-                    f"أنت خبير في هندسة الأوامر، حسن هذا النص ليكون أمراً احترافياً ومفصلاً باللغة العربية: {user_input}"
+                    f"أنت خبير في هندسة الأوامر. حسن هذا النص ليكون أمراً احترافياً بالعربية: {user_input}"
                 )
-                st.success("✅ نجحنا!")
+                st.success("✅ تم بنجاح!")
                 st.code(response.text)
                 st.balloons()
             except Exception as e:
-                st.error(f"❌ خطأ أثناء التحسين: {e}")
+                # إذا ظهر خطأ Location، سنعرف فوراً
+                error_msg = str(e)
+                if "location" in error_msg.lower():
+                    st.error("🌍 عذراً، الخدمة غير متوفرة في موقع السيرفر الحالي. سنحاول حلاً بديلاً قريباً.")
+                else:
+                    st.error(f"❌ حدث خطأ: {error_msg}")
     else:
-        st.warning("⚠️ اكتب شيئاً أولاً.")
+        st.warning("⚠️ اكتب نصاً أولاً.")
 
 st.caption("برمجت بواسطة Xiaomi 15 Ultra 🚀")
