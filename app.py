@@ -1,37 +1,44 @@
 import streamlit as st
 import google.generativeai as genai
 
-st.set_page_config(page_title="محسن الأوامر Pro", page_icon="🤖")
+st.set_page_config(page_title="Prompt Refiner Pro", page_icon="🤖")
 
 st.title("🤖 محسن الأوامر الذكي")
-st.markdown("---")
 
-# جلب المفتاح سراً من إعدادات الموقع
+# 1. التأكد من وجود المفتاح في Secrets
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("🚨 المفتاح غير موجود! تأكد أنك أضفته في Secrets باسم GEMINI_API_KEY")
+    st.stop()
+
+# 2. إعداد الاتصال
 try:
-    if "GEMINI_API_KEY" in st.secrets:
-        API_KEY = st.secrets["GEMINI_API_KEY"]
-        genai.configure(api_key=API_KEY)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-    else:
-        st.error("⚠️ خطأ: المفتاح غير موجود في إعدادات Secrets.")
+    API_KEY = st.secrets["GEMINI_API_KEY"]
+    genai.configure(api_key=API_KEY)
+    # نستخدم فلاش لأنه الأخف والأسرع
+    model = genai.GenerativeModel('gemini-1.5-flash')
 except Exception as e:
-    st.error(f"❌ حدث خطأ في النظام: {e}")
+    st.error(f"❌ فشل في إعداد الاتصال: {e}")
+    st.stop()
 
-user_input = st.text_area("📝 اكتب فكرتك البسيطة هنا:", height=150)
+user_input = st.text_area("📝 اكتب فكرتك هنا:")
 
 if st.button("✨ ابدأ التحسين الآن"):
     if user_input:
-        with st.spinner("⏳ جاري التحسين..."):
+        with st.spinner("⏳ جاري التواصل مع ذكاء جوجل..."):
             try:
-                prompt = f"أنت خبير في هندسة الأوامر، حسن هذا النص ليكون أمراً احترافياً ومفصلاً باللغة العربية: {user_input}"
-                response = model.generate_content(prompt)
-                st.success("✅ تم التحسين بنجاح!")
-                st.code(response.text, language='markdown')
+                # تجربة بسيطة جداً للتأكد من الاتصال
+                response = model.generate_content(f"حسن هذا النص ليكون أمراً احترافياً: {user_input}", 
+                                                 generation_config={"timeout": 20}) # مهلة 20 ثانية
+                st.success("✅ نجحنا!")
+                st.code(response.text)
                 st.balloons()
             except Exception as e:
-                st.error(f"❌ حدث خطأ أثناء الاتصال بجوجل: {str(e)}")
+                if "location" in str(e).lower():
+                    st.error("🌍 عذراً، سيرفرات Streamlit في هذه المنطقة لا تدعم خدمة Gemini حالياً.")
+                else:
+                    st.error(f"❌ خطأ أثناء التحسين: {e}")
     else:
-        st.warning("⚠️ يرجى كتابة نص أولاً.")
+        st.warning("⚠️ اكتب شيئاً أولاً.")
 
-st.markdown("---")
-st.caption("تطوير وحش الشاومي 15 ألترا 🚀")
+st.caption("برمجت بواسطة Xiaomi 15 Ultra 🚀")
+ 
